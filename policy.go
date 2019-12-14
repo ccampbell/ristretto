@@ -239,6 +239,7 @@ type sampledLFU struct {
 	maxCost  int64
 	used     int64
 	metrics  *Metrics
+	allowEviction func(key uint64) bool
 }
 
 func newSampledLFU(maxCost int64) *sampledLFU {
@@ -257,6 +258,10 @@ func (p *sampledLFU) fillSample(in []*policyPair) []*policyPair {
 		return in
 	}
 	for key, cost := range p.keyCosts {
+		if p.allowEviction != nil && !p.allowEviction(key) {
+			continue
+		}
+
 		in = append(in, &policyPair{key, cost})
 		if len(in) >= lfuSample {
 			return in

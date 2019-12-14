@@ -103,6 +103,10 @@ type Config struct {
 	// is ran after Set is called for a new item or an item update with a cost
 	// param of 0.
 	Cost func(value interface{}) int64
+	// AllowEviction is called when sampling current cache values to find values
+	// to be evicted. If it returns false, then that cache key will not be
+	// evicted and will live to see another day.
+	AllowEviction func(key uint64) bool
 }
 
 type itemFlag byte
@@ -133,6 +137,7 @@ func NewCache(config *Config) (*Cache, error) {
 		return nil, errors.New("BufferItems can't be zero.")
 	}
 	policy := newPolicy(config.NumCounters, config.MaxCost)
+	policy.(*defaultPolicy).evict.allowEviction = config.AllowEviction
 	cache := &Cache{
 		store:     newStore(),
 		policy:    policy,
